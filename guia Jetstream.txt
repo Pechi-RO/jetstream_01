@@ -1,0 +1,1008 @@
+Guía de instalacion y primer proyecto con Jetstream
+//en lapagian de jetstream vienen los pasos de isntalacion pero tb lo pongo por aqui
+comprobamos si tenemos npm instalado:
+si no o tenemos lo descargamos desde su pagina oficial, se descarga junto con node js,
+el npm es su gestor de paquetes.
+para comprobar si lo tenemos escribimos en la temrinal npm a ver si lo reconoce
+en windows con el instalador es siguiente siguiente siguiente, se instala con node js.
+
+empezamos creando un proyecto normal de laravel:
+composer create-project laravel/laravel jetstream02_02_22
+vamos creando la BBDD que usaremos.
+
+preparamos el .env como siempre.
+preparamos mailtrap para usar el correo.buscamos la integracion de laravel7
+esto en .env,las ultimas dos lineas una ponemos un correo falso y la ultima la dejamos igual
+el puerto 2525 es uno modificado, depende de la red tendremos que cambiar el puerto.
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=da440b56d504a1
+MAIL_PASSWORD=f0da1a4e9296f8
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=admin@correo.es
+MAIL_FROM_NAME="${APP_NAME}"
+
+
+al principio de env modificamos la app_url, le ponemos el puerto 8000 para que funcione la prueba:
+
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=base64:FwWjNA6f5RL2QYm1V3DLRwqzWNNloG+AOm+MSbqeDSg=
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+abrimos terminal y con composer instalamos jetstream:
+composer require laravel/jetstream
+
+jetstream trabaja con view js o livewire, nosotros trabajaremos con livewire:
+
+php artisan jetstream:install livewire
+PODMOS PONERLO ASI
+php artisan jetstream:install livewire --teams
+y asi podriamos establecer equipos de trabajo, bastante util en desarrollo de proyectos multitudinarios.
+
+ahora instalamos npm en la raiz del pryecto:
+npm install
+ si da fallo actualizamos npm ya sea con el isntalador de windows o con:
+npm install -g npm@8.4.0
+si falla la cache usamos:
+npm cache clean --force
+
+una vez que el npm install funcione corremos el comando siguiente:
+npm run dev
+
+y deberia salir un mensaje de que todo esta correcto
+
+
+ahora empezamos con una migraciones:
+php artisan migrate:fresh
+
+una vez hecha podemos empezar lanzando el server:
+
+la pagina de inicio de base tiene un login y register de base,totalmente funcional.
+Vamos a activar la verificacion del correo electronico.
+
+vamos a config/fortify.php
+VIENE ASI descomentamos el comentario de verificaicon de mail
+
+'features' => [
+        Features::registration(),
+        Features::resetPasswords(),
+        // Features::emailVerification(),
+        Features::updateProfileInformation(),
+        Features::updatePasswords(),
+        Features::twoFactorAuthentication([
+            'confirmPassword' => true,
+        ]),
+    ],
+
+queda asi:
+
+ 'features' => [
+        Features::registration(),
+        Features::resetPasswords(),
+        Features::emailVerification(),
+        Features::updateProfileInformation(),
+        Features::updatePasswords(),
+        Features::twoFactorAuthentication([
+            'confirmPassword' => true,
+        ]),
+    ],
+
+
+vamos a app/models/user.php:
+modificamos la siguiente linea para que quede tal cual 
+
+class User extends Authenticatable implements MustVerifyEmail
+
+//es la linea de la clase de user,no tiene pérdida
+//el implements es lo nuevo
+
+nos registramos y verificamos el correo en el mailtrap.
+Esto podemos hacerlo con un correo de verdad para que
+nos llegue a un correo autentico y que sea funcional.
+
+vamos  a habilitar la img de perfil, vamos a config/jetstream.php:
+l mayoria de estas features estan desactivadas, descomentamos la foto de perfil
+
+'features' => [
+        // Features::termsAndPrivacyPolicy(),
+        // Features::profilePhotos(),
+        // Features::api(),
+        // Features::teams(['invitations' => true]),
+        Features::accountDeletion(),
+    ],
+
+
+para que funcione tenemos que hacer el acceso directo:
+php artisan storage:link
+
+si nos fijamos en la vista dashboard vemos que ya viene con componente y hay otras tantas vistas ya listas.
+<x-app-layout>
+
+si vemos el componente esta trabajando con varios slots
+ 
+
+se recomienda publicar los componentes:
+php artisan vendor:publish --tag=jetstream-views
+
+
+<x-app-layout>
+esto indica que buscara el app en la carpeta layout
+
+<x-jet-welcome />
+es el otro componente que se usa en dashboard
+este buscara en jetstream el welcome.blade.php
+
+lo que empieza por x-jet son componentes de la carpeta vendor, que hemos traido
+con publish vendor
+
+si algun estilo de tailwind no funciona habiendolo introducido luego se puede arrelgar usando:
+npm run devesto pasa porque cuando vamos a lanzar la app elimina los archivos de tailwind no usados, por eso aunque sete bien implemntado si no se 
+usaba antes no funciona pero si se actualiza funciona correctamente.
+
+
+los componentes livewire se cargan asi:
+//esto lo hemos traido con el publish vendor si no esta oculto.
+
+            @livewire('navigation-menu')
+el ejemplo lo he sacado de resources/views/layouts/app.blade.php
+
+en:
+
+resources\views\navigation-menu.blade.php
+tenemos el logo
+
+ <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="{{ route('dashboard') }}">
+                        <x-jet-application-mark class="block h-9 w-auto" />
+                    </a>
+                </div>
+
+podemos cambiar asi el logo:
+
+ <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="{{ route('dashboard') }}">
+                    <img src="{{Storage::url('logos/al_andalus.jpg')}}" class="object-cover object-center w-12" alt="">
+                    </a>
+                </div>
+
+//la ruta lleva a storage\app\public\logos\al_andalus.jpg la carpeta logos la hemos creado a mano y introducido ahi la img
+//para que aparezca public hemos hecho antes el php artisan storage:link
+
+
+con el active reuest aparece un sombreado en el menu para que se sepa donde esta :
+//estamos en navigation-menu
+
+ <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    <x-jet-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-jet-nav-link>
+                </div>
+
+
+vamos a trabajr con el storage, normalmente apunta a local, pero vamos a 
+hacerlo trabajar con public
+
+vamos a config/filesystem.php
+//en driver ponia local, pero lo hemos cambiado por public
+
+
+ 'disks' => [
+
+        'local' => [
+            'driver' => 'public',
+            'root' => storage_path('app'),
+        ],
+
+
+ahora vamos a .env:
+
+FILESYSTEM_DRIVER=local
+
+lo cambiamos a public:
+
+FILESYSTEM_DRIVER=public
+
+//nota, en filesys viene configurado para trabajar con AWS y con google.
+
+
+nos creamos un modelo:
+//solo creamos migracion y factory del modelo Post
+
+php artisan make:model Post -mf
+
+vamos con las migraciones:
+en database\migrations\2022_02_03_094257_create_posts_table.php
+
+ public function up()
+    {
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->string('titulo')->unique();
+            $table->text('contenido');
+            $table->string('image');
+            $table->timestamps();
+        });
+    }
+
+vamos al modelo:
+en app\Models\Post.php
+
+class Post extends Model
+{
+    use HasFactory;
+    protected $fillable=['titulo','contenido','image'];
+}
+
+rellenamos el factory:
+database\factories\PostFactory.php
+
+  public function definition()
+    {
+        return [
+            'titulo'=>$this->faker->unique()->sentence(),
+            'contenido'=>$this->faker->text(),
+            'image'=>'posts/'.$this->faker->image('public/storage/posts',640,480,null,false)
+        ];
+    }
+}
+
+no existe public/storage/posts asi que hay que crealo, todavia no, en el siguiente paso
+storage\app\public\posts
+
+
+vamos a los seeders:
+database\seeders\DatabaseSeeder.php
+aqui creamos la carpeta con un drop de seguridad y creamos 50 posts:
+
+ public function run()
+    {
+
+        // \App\Models\User::factory(10)->create();
+        Storage::deleteDirectory('posts');
+        Storage::makeDirectory('posts');
+        \App\Models\Post::factory(50)->create();
+
+    }
+
+una vez listo corremos la terminal:
+php artisan migrate:fresh --seed
+
+ahora vamos a crear un componente livewire para gestionar los posts. un livewire
+para gestionar el crud de posts:
+//show posts es el nombre
+php artisan make:livewire show-posts
+
+
+//ha creado en app/http/livewire y en esa carpeta mete los componentes
+en este caso: app\Http\Livewire\ShowPosts.php
+renderiza la vista puesta
+
+<?php
+
+namespace App\Http\Livewire;
+
+use Livewire\Component;
+
+class ShowPosts extends Component
+{
+    public function render()
+    {
+        return view('livewire.show-posts');
+    }
+}
+
+
+y crea la vista:
+resources\views\livewire\show-posts.blade.php
+
+<div>
+    {{-- In work, do what you enjoy. --}}
+</div>
+ en el componente SOLO PUEDE HABER UN ELEMENTO PADRE
+en este caso:
+
+<div>
+    {{-- In work, do what you enjoy. --}}
+</div>
+<p></p>
+
+haria que petase.
+
+
+ahora creamos las rutas:
+routes\web.php
+esto no lo he hecho yo, ha sido el programa
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
+    return view('dashboard');
+})->name('dashboard');
+
+la ruta middleware necesita autentificacion para entrar, si no estas verificado te lleva a dashboard
+
+teniendo eso en cuenta creamos una ruta:
+//es una ruta get pero necesita autentificacion y le damos el nombre posts.show
+Route::middleware(['auth:sanctum', 'verified'])->get('/posts', ShowPosts::class)->name('posts.show'); 
+
+como hemos migrado hay que registrarse de nuevo.
+
+ponemos el enlace a posts.show en el componente de nav
+resources\views\navigation-menu.blade.php
+
+<!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    <x-jet-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-jet-nav-link>
+                    <x-jet-nav-link href="{{ route('posts.show') }}" :active="request()->routeIs('posts.show')">
+                        {{ __('Posts') }}
+                    </x-jet-nav-link>
+                </div>
+
+
+le podemos dar a contenido a resources\views\livewire\show-posts.blade.php :
+<div>
+    Estoy en show-posts
+</div>
+
+sin cargar el layout/app ya aparece en la pagina showposts
+copiamos un tabla de tailwindcss en showposts
+
+se vera rara asi que toca :
+npm run dev
+//recordemos que hacemos esto porque estamos usando objetos nuevos de tailwind.
+//que no carga todos los estilos de base parque pese menos
+
+creamos un componente tenemos que crear la carpeta components
+resources\views\components\tabla.blade.php
+//hemos cortado los 4 div de show posts, los de inicio y los d cierre, para sustituirlos
+//por el componente
+
+<div class="flex flex-col">
+    <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            {{$slot}}
+        </div>
+    </div>
+  </div>
+</div>
+
+el componente se llamará <x-tabla>.
+el unico problema es que la tabla se estira mucho, lo cambiamos
+copiando el div de dashboard y le añadimos un mb-4.
+
+show posts quedaria asi tras los cambios:
+//es posible que haya que correr npm run dev
+
+<div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <!-- This example requires Tailwind CSS v2.0+ -->
+<x-tabla>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Title
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th scope="col" class="relative px-6 py-3">
+                  <span class="sr-only">Edit</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=4&w=256&h=256&q=60" alt="">
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">
+                        Jane Cooper
+                      </div>
+                      <div class="text-sm text-gray-500">
+                        jane.cooper@example.com
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">Regional Paradigm Technician</div>
+                  <div class="text-sm text-gray-500">Optimization</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  Admin
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                </td>
+              </tr>
+  
+              <!-- More people... -->
+            </tbody>
+
+          </table>
+        </x-tabla>
+
+  
+</div>
+
+
+modificamos app\Http\Livewire\ShowPosts.php para traer los posts a la tabla:
+//nuevo
+//hay que poner  use Livewire\WithPagination; al ser un componente
+//y hay que poner use WithPagination; en la clase
+//todo esto al ser un componente hay que hacerlo
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public function render()
+    {
+        $posts=Post::orderBy('id','desc')->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+}
+
+
+modificamos resources\views\livewire\show-posts.blade.php 
+dejandolo listo para enseñar los posts:
+//esto es lo de siempre
+
+<div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-4">
+    <!-- This example requires Tailwind CSS v2.0+ -->
+<x-tabla>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Title
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col"  colspan="2">
+                  Role
+                </th>
+                <th scope="col" class="relative px-6 py-3">
+                  <span class="sr-only">Edit</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @foreach($posts as $item)
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{$item->id}}
+                  </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <img class="h-10 w-10 rounded-full" src="{{Storage::url($item->image)}}" alt="">
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{$item->titulo}}
+                      </div>
+                      
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  {{$item->contenido}}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                 Editar
+                </td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  Borrar
+                </td>
+              </tr>
+              @endforeach
+  
+              <!-- More people... -->
+            </tbody>
+
+          </table>
+        </x-tabla>
+<div class="mt-2">
+{{$posts->links()}}
+</div>
+  
+</div>
+
+
+
+ponemos el cdn de fontawesome en la plantilla de layouts
+resources\views\layouts\app.blade.php
+
+ <!--Iconos font awesome-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        @livewireStyles
+
+
+
+
+vamos a introducir una bubsqueda en tiempo real, como los datatables y los scopes,
+ESTO ES SUPERIOR
+
+vamos a empezar a usar un componente de vendor/public.
+resources\views\livewire\show-posts.blade.php
+//llamamos al componente de jetstream input
+esta localizado en resources\views\vendor\jetstream\components\input.blade.php
+//de paso hemos dejado listo el espacio para el boton crear
+
+<div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-4">
+    <div class="my-2 flex">
+        <div class="flex-1 w-80">
+        <x-jet-input type="search" placeholder="Buscar..."/><i class="fas fa-search"></i>
+        </div>
+        <div>
+            Boton crear
+        </div>
+    </div>
+    <!-- This example requires Tailwind CSS v2.0+ -->
+<x-tabla>
+
+
+preparamos la clase show posts para el search
+app\Http\Livewire\ShowPosts.php
+
+//RECORDATORIO
+//% es un caracter comodin en mysql
+//hace que busque lo que sea que coincida que este dentro de la cadena que introducimos
+//tal que buscara en la BBDD cualquier coincidencia dentro de la cadena
+//de lo que este entre los %% lo que sera lo que sea que coincida con
+//el titutlo o el contenido
+//si queremos buscar solo por un campo, comentamos o borramos el otro campo,
+//y tb podemos buscar potr otros campos
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public $search="";
+
+    public function render()
+    {
+        $posts=Post::orderBy('id','desc')
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+}
+
+
+y hacemos un cambio en showposts:
+resources\views\livewire\show-posts.blade.php
+//wire:model="search" hace que la busqueda sea en tiempo real
+//el search es para que coincida con el tipo del formulario, creo.
+//no se pero funciona
+//ESTO ES LO HOSTIA
+//y bastante facil
+
+
+<div class="flex-1 w-80">
+        <x-jet-input type="search" placeholder="Buscar..." wire:model="search" /><i class="fas fa-search"></i>
+        </div>
+
+
+para que nos salga un mensaje cuando no encuentre ningun post lo hacemos asi:
+resources\views\livewire\show-posts.blade.php
+//esto es desde el if hasta el final de la pagina 
+//pero esta compimido
+
+@if($posts->count())
+
+<x-tabla>//esta comprimido
+</x-tabla>
+
+@else
+<div class="mt-2 text-bold">No se encontró ningún post</div>
+
+        @endif
+        <div class="mt-2">
+
+            {{$posts->links()}}
+</div>
+  
+</div>
+
+
+ahora vamos a hacer que se pueda ordenar por id titulo nombre y contenido
+en cada uno lo modificamos asi le ponemos el i class indicandolo y introducimos en clase cursor-pointer
+
+<th scope="col" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Id<i class="fas fa-sort"></i>
+                </th>
+
+
+ahora que tenemos esto listo modificamos la clase:
+//introducimos 2 variables
+//y cambiamos el orderby
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+
+    public function render()
+    {
+        $posts=Post::orderBy($this->campo,$this->orden)
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+}
+
+al principio funcionara igual ya que las variables se han inicializado
+al valor que le habiamos dado de forma inicial pero crearemos una variable 
+que lo cambie y pondremos wire:model para que la llamada al metodo se actualice en tiempo real
+y asi tendremos orden en  el que varia ascendiente y descendiente y orden por titulo contenido o id.
+
+
+para que funcione vamos a crear una funcion en:resources\views\livewire\show-posts.blade.php
+una funcion que valdrá para ordenar el orden:
+
+public function ordenar(String $campo)
+    {
+        if ($campo == $this->campo) {
+            $this->orden = ($this->orden == 'desc') ? 'asc' : 'desc';
+        }
+        $this->campo = $campo;
+    }
+
+
+
+una vez que tenemos la funcion lista la usamos en la vista:
+resources\views\livewire\show-posts.blade.php
+//wire:click(funcion(parametro))
+//esto permitirá que se linkee a tiempo real con una funcion onlink de js, que la creamos
+//y se actualizara en tiempo real con cada click.
+//segun si clickamos en wire:click="ordenar('id')" o en ordenar por titulo o contenido
+//y alternara desc y asc
+
+<x-tabla>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" wire:click="ordenar('id')" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Id<i class="fas fa-sort"></i>
+                </th>
+                <th scope="col" wire:click="ordenar('titulo')" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    título<i class="fas fa-sort"></i>
+                </th>
+                <th scope="col" wire:click="ordenar('contenido')" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Contenido<i class="fas fa-sort"></i>
+                </th>
+
+
+para manejar el crud usaremos livewire que creara controladorse y vistas respectivamentes
+de lo que necesitemos, en vez de un controller glabal tenemos uno para cada metodo.
+
+creamos un nuevo elemento livewire para el create:
+php artisan make:livewire create-post
+
+en el creado resources\views\livewire\create-post.blade.php:
+//ponemos un boton, lo usaremos de componente para ponerlo en showposts
+
+<div>
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-plus"></i>Nuevo Post
+</button>
+</div>
+
+
+ahora en: resources\views\livewire\show-posts.blade.php
+//llamamos al componente livewire create-post
+
+<div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-4">
+    <div class="my-2 flex">
+        <div class="flex-1 w-80">
+        <x-jet-input type="search" placeholder="Buscar..." wire:model="search" /><i class="fas fa-search"></i>
+        </div>
+        <div>
+            @livewire('create-post')
+        </div>
+    </div>
+    <!-- This example requires Tailwind CSS v2.0+ -->
+    @if($posts->count())
+<x-tabla>
+
+
+ahora haremos que cuando hagamos click en el boton saldra una ventana emergente para rellenar los datos.
+usaremos un componente del vendor:
+resources\views\vendor\jetstream\components\dialog-modal.blade.php
+su contenido es:
+
+@props(['id' => null, 'maxWidth' => null])
+
+<x-jet-modal :id="$id" :maxWidth="$maxWidth" {{ $attributes }}>
+    <div class="px-6 py-4">
+        <div class="text-lg">
+            {{ $title }}
+        </div>
+
+        <div class="mt-4">
+            {{ $content }}
+        </div>
+    </div>
+
+    <div class="flex flex-row justify-end px-6 py-4 bg-gray-100 text-right">
+        {{ $footer }}
+    </div>
+</x-jet-modal>
+
+le podremos personalizar 3 campos, title, content y footer
+
+la llamamos en el componente livewire create-post:
+//la ventana modal esta cerrada de base, en false
+//para abrirla hayq ue ponerla en true,
+//que lo haremos con un boton.
+//el wire que hemos puesto veremos su significado mas adelante
+
+//el wire:click="$set('isOpen','true')" del boton cambia la variable con un click,
+//le pondria el valor a true
+//tambien sepodria poner una funcion pero si solo se cambia una variable es rcomendable 
+//usar el $set
+
+<div>
+    <button wire:click="$set('isOpen','true')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-plus"></i>Nuevo Post
+</button>
+<x-jet-dialog-modal wire:model="isOpen">
+<x-slot name="title">
+Nuevo Post
+</x-slot>
+<x-slot name="content">
+Formulario
+</x-slot>
+<x-slot name="footer">
+Botones
+</x-slot>
+
+</x-jet-dialog-modal>
+</div>
+
+
+
+Nos hace falta hacer la funcion en :app\Http\Livewire\CreatePost.php
+
+<?php
+
+namespace App\Http\Livewire;
+
+use Livewire\Component;
+
+class CreatePost extends Component
+{
+  
+        public $isOpen=false;
+        public function render(){
+            return view('livewire.create-post');
+        }
+    
+}
+
+
+
+ahora personalizamos el formulario de: resources\views\livewire\create-post.blade.php
+pondremos una img para que la guarde.
+Usaremos los componentes de laravel que tenemos en resources\views\vendor\jetstream
+podemos copiar las clases de los componentes para  que estilo de la pagina no sea disonante
+cuando no usemos los componentes.
+//estamos en resources\views\livewire\create-post.blade.php
+//usamos 2 componentes label y input
+
+
+<div>
+    <button wire:click="$set('isOpen','true')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-plus"></i>Nuevo Post
+</button>
+<x-jet-dialog-modal wire:model="isOpen">
+<x-slot name="title">
+Nuevo Post
+</x-slot>
+<x-slot name="content">
+<x-jet-label value="Título del Post"/>
+<x-jet-input type="text" placeholder="Título" class="my-2 mb-4 w-full" />
+<x-jet-label value="Contenido del Post"/>
+<text-area class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm' placeholder="Contenido del post"></text-area>
+
+</x-slot>
+<x-slot name="footer">
+<button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-save"></i>Enviar
+</x-slot>
+
+</x-jet-dialog-modal>
+</div>
+
+
+ahora vamos a prepararlo para poder subir imagenes, modificamos el livewire:
+app\Http\Livewire\CreatePost.php
+//es solo una linea pero es necesaria
+
+<?php
+
+namespace App\Http\Livewire;
+
+use Livewire\Component;
+//necesario para subir img
+use Livewire\withFileUploads;
+
+class CreatePost extends Component
+{
+//necesario para subir img
+   	use withFileUploads;
+        public $isOpen=false;
+        public function render(){
+            return view('livewire.create-post');
+        }
+    
+}
+
+
+de vuelta al create-post.blade preparamos unos div con grid para usar y en uno de ellos introducimos lo que usemos
+del input file de tailwind css, nosotros usaremos solo el input, ya que para el label usaremos componentes.
+
+
+
+<!---Para la imagen-->
+<div class="grid mt-2 grid-cols-2 gap-4">
+<div>
+<x-jet-label value="Imagen del Post"/>
+<div class="flex justify-center">
+
+<input class="form-control
+    block
+    w-full
+    px-3
+    py-1.5
+    text-base
+    font-normal
+    text-gray-700
+    bg-white bg-clip-padding
+    border border-solid border-gray-300
+    rounded
+    transition
+    ease-in-out
+    m-0
+    focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+    type="file">
+
+</div>
+</div>
+
+<div>
+</div>
+
+
+</div>
+
+
+
+<!--Fin de lo de la img-->
+</x-slot>
+
+ahora en el livewire lo modificamos poniendo una variable para la imagen.
+
+<?php
+
+namespace App\Http\Livewire;
+
+use Livewire\Component;
+use Livewire\withFileUploads;
+
+class CreatePost extends Component
+{
+        use withFileUploads;
+        public $image;
+        public $isOpen=false;
+        public function render(){
+            return view('livewire.create-post');
+        }
+    
+}
+
+
+y lo enlazamos con un wire:
+//esto es en el input file
+//el accept es para que solo acepte imagenes
+//he omitido la class
+
+<input type="file" wire:model="image" accept="image/*">
+
+ahora pondremos la segunda parte de la img que la muestre o que muestre una img
+default si no ha subido nada.
+
+esta es la version completa:
+//o muestra la imagen subida temporalmente 
+o la no-img guardada en logos y puesta manualmente ahí.
+
+
+
+<!---Para la imagen-->
+<div class="grid mt-2 grid-cols-2 gap-4">
+<div>
+<x-jet-label value="Imagen del Post"/>
+<div class="flex justify-center">
+
+<input class="form-control
+    block
+    w-full
+    px-3
+    py-1.5
+    text-base
+    font-normal
+    text-gray-700
+    bg-white bg-clip-padding
+    border border-solid border-gray-300
+    rounded
+    transition
+    ease-in-out
+    m-0
+    focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+    type="file" wire:model="image" accept="image/*">
+
+</div>
+<!--Pintamos la img por defecto o la img seleccionada-->
+@if($image)
+<img src="{{$image->temporaryUrl()}}" class="object-cover object-center w-80">
+@else
+<img src="{{Storage::url('logos/no-img.png')}}" class="object-cover object-center w-80">
+@endif
+</div>
+
+<div>
+</div>
+</div>
+<!--Fin de lo de la img-->
+</x-slot>
+
