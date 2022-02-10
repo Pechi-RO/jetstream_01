@@ -1623,7 +1623,7 @@ class ShowPosts extends Component
 
 
 ahora terminamos de preparar la ventana modal en show-posts:
-//PENDIENTE DE REVISION ES POSIBLE QUE TENGA FALLOS
+//Sin fallos
 
 
  <!--Ventana modal para editar registros-->
@@ -1825,14 +1825,284 @@ class ShowPosts extends Component
 }
 
 
-//mirar las validaciones no deja guardar el mismo titulo
+//Error solucionado
+
+Vamos a preparar una pagina de contacto.Empezamos usando la terminal:
+php artisan make:mail ContactoMailable
+Ha creado app\Mail\ContactoMailable.php
+//Esto lo maquetamos para ver que nevía por correo
+//necesitamos qe abra un formulario
+
+<?php
+
+namespace App\Mail;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
+
+class ContactoMailable extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    /**
+     * Create a new message instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        return $this->view('view.name');
+    }
+}
+
+
+Creamos un controlador  para controlar el fomulario
+php artisan make:controller ContactoController
+
+ha creado app\Http\Controllers\ContactoController.php
+con esto podremos controlar le formulario, le damos metodos ,pero lo dejamos de momento
+necesitamos rutas.
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class ContactoController extends Controller
+{
+    public function pintarFormulario(){
+        
+    }
+    public function procesarFormulario(Request $request){
+
+    }
+}
+
+
+para las rutas vamos a routes\web.php
+creamos:
+
+Route::middleware(['auth:sanctum', 'verified'])->get('/contacto',[ContactoController::class,'pintarFormulario'])->name('contacto.index');
+
+recordemos que Route::middleware(['auth:sanctum', 'verified']) requiere que estemos logeados para que entremos
+esto  ->get('/contacto',[ContactoController::class,'pintarFormulario'])->name('contacto.index');
+hace que llamemos en la ruta conacto a ContactoController y a su metodo pintar formulario con
+este array asociatico y al final le damos un nombre contacto.index
+
+ya hora hacemos lo mismo con el otro metodo, pero cambiamos el get por el post, 
+con el primero hemos cogido el fomrulario y cone ste lo publicamos con psot
+Route::middleware(['auth:sanctum', 'verified'])->post('/contacto',[ContactoController::class,'procesarFormulario'])->name('contacto.procesar');
+
+
+en app\Http\Controllers\ContactoController.php
+modificamos pintarformulario para que devuelva una vista.
+
+class ContactoController extends Controller
+{
+    public function pintarFormulario(){
+        return view('contacto.index');
+    }
+
+
+no tenemos esa vista asi que la creamos
+cremos la carpeta y el archivo
+resources\views\contacto\index.blade.php
+
+lo rellenamos un poquito:
+
+<x-app-layout>
+    Hola
+</x-app-layout>
+
+ahora en resources\views\navigation-menu.blade.php
+ponemos la ruta para que se vea en la barra de navegacion.
+
+  <!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                    <x-jet-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-jet-nav-link>
+                    <x-jet-nav-link href="{{ route('posts.show') }}" :active="request()->routeIs('posts.show')">
+                        {{ __('Posts') }}
+                    </x-jet-nav-link>
+                    <x-jet-nav-link href="{{ route('contacto.index') }}" :active="request()->routeIs('contacto.index')">
+                        {{ __('Contáctanos') }}
+                    </x-jet-nav-link>
+                </div>
+            </div>
+
+
+copiamos unas clases para ponerlas en el index:
+resources\views\contacto\index.blade.php
+//hemos copiado esos divs de resources\views\dashboard.blade.php
+
+<x-app-layout>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            Hola
+        </div>
+    </div>
+</x-app-layout>
+
+
+usaremos packagist y composer para instalar protonomedia:
+
+composer require protonemedia/laravel-form-components
+
+sirve para hacer formularios
+
+modificamos contacto.index:
+
+<x-app-layout>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="w-3/4 p-4 bg-teal-300 shadow rounded mx-auto">
+                <x-form action="{{route('contacto.procesar')}}">
+                <x-form-input name="nombre" label="Nombre" placeholder="Su nombre"/>
+                <x-form-textarea name="mensaje" label="Mensaje" placeholder="Su mensaje"/>
+                <x-form-submit><i class="fas fa-solid fa-paper-plane"></i> Enviar</x-form-submit>	        
+		
+		</x-form>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
+
+gracias al plugin instalado ha quedado muy bien casi sin modificar
+todos estos x-form salen del aquete instalado
+para qver que mas hay mirar su documentacion:
+https://packagist.org/packages/protonemedia/laravel-form-components
+(recordatorio que hay que hacer npm run dev para que se carguen las clases)
+
+empezamos a procesar el fomrulario:
+app\Http\Controllers\ContactoController.php
+ public function procesarFormulario(Request $request){
+        $request->validate([
+            'nombre'=>['required','string','min:3'],
+            'mensaje'=>['required','string','min:10'],
+
+        ]);
+
+    }
+
+esto ya viene con los errores ya hechos, esto es posible con el protonomedia
+solo le ponemos las validaciones y él hace el resto.
+nada mal,nada mal.
+ahorras mucho codigo.
+recordar que cuando mudemos el proyecto solo con composer update se hace el lock y se reinstalan los plugin.
+
+el mensaje está procesado, falta enviarlo.
+Para ello vamos a app\Mail\ContactoMailable.php
+
+ahora en la terminal usamos:
+php artisan vendor:publish
+elegimos en el que aparezca laravel-mail, en mi caso 28 una vez localizado, tecleamos el numero
+y con esto nos hemos traido del vendor unas carpetas con componentes muy utiles para usar.
+
+
+modificamos contactoController.php
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Mail\ContactoMailable;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+
+class ContactoController extends Controller
+{
+    public function pintarFormulario(){
+        return view('contacto.index');
+    }
+    public function procesarFormulario(Request $request){
+        $request->validate([
+            'nombre'=>['required','string','min:3'],
+            'mensaje'=>['required','string','min:10'],
+
+        ]);
+        //si paso de aqui la validacion ha ido bien
+        //esto recupera los datos de contacto mailable, 
+        //es posible dado a la modificaicon del constructor.
+        $correo=new ContactoMailable($request->all(), auth()->user()->email);        
+        try{
+            //intentamos en viar el mensaje desde la dirección puesta
+            //que es la de .env
+            Mail::to('admin@correo.es')->send($correo);
+        }catch(\Exception $ex){
+            //recordemos que esto es el die() de laravel
+            //dd($ex->getMessage());
+            return redirect()->route('posts.show')->with('correo','No se pudo enviar el correo');
+
+        }
+        return redirect()->route('posts.show')->with('correo','Texto');
+
+    }
+}
+
+
+Ahora queda que al volver se genere una alerta en show-posts
+ponemos el sweetalert.
+
+en resources\views\livewire\show-posts.blade.php
+al principio introduzco la session flash:
+
+@if(session('correo'))
+<script>
+  Swal.fire(
+  'Información',
+  "{{session('correo')}}",
+  'success'
+)
+</script>
+@endif
+
+
+Rellenamos resources\views\mails\fcontacto.blade.php
+//recordemos que trabajmos aqui con contactoMailable
+//accedemos como esta puesto en esa clase
+
+@component('mail::message')
+# Formulario de contacto
+
+##Nombre
+
+
+{{$datos['nombre']}}
+
+##Email
+
+
+{{$email}}
+
+
+##Mensaje
+
+
+{{$datos['mensaje']}}
+@endcomponent
+
+
+
+
+//error solucionadio
+//accedo con $datos['variable'] en vez de  $datos->variable
+
+
+//TODOS LOS ERRORES HAN SIDO DEPURADOS
 
 
 Fin del proyecto
-
-
-
-
-
-
-

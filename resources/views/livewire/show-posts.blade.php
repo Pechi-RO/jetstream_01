@@ -1,3 +1,13 @@
+@if(session('correo'))
+<script>
+  Swal.fire(
+  'Información',
+  "{{session('correo')}}",
+  'success'
+)
+</script>
+@endif
+
 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-4">
     <div class="my-2 flex">
         <div class="flex-1 w-80">
