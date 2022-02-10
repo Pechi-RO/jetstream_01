@@ -13,12 +13,17 @@
         <!-- Styles -->
         <link rel="stylesheet" href="{{ mix('css/app.css') }}">
 
-        <!--Iconos font awesome-->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <!--Iconos font awesome-->        
+        <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous"/>
+       
         @livewireStyles
 
-        <!-- Scripts -->
+         <!-- Scripts -->
         <script src="{{ mix('js/app.js') }}" defer></script>
+
+         <!--Sweetalert-->
+         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     </head>
     <body class="font-sans antialiased">
         <x-jet-banner />
@@ -44,5 +49,16 @@
         @stack('modals')
 
         @livewireScripts
+        <script>
+            Livewire.on("alerta", function(txt) {
+                Swal.fire({
+                    icon: 'success',
+                    title: txt,
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            })
+
+        </script>
     </body>
 </html>

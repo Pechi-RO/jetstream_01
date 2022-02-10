@@ -1006,3 +1006,833 @@ o la no-img guardada en logos y puesta manualmente ahí.
 <!--Fin de lo de la img-->
 </x-slot>
 
+las validaciones las hacemos n el controlador con una nueva funcion:
+app\Http\Livewire\CreatePost.php
+//para las validaciones tenemos que irnos a la clase con la que estamos trabajando en el liveware
+//Ademas creamos 2 variables extras para ligar el formulario con wire:model con sus campos.
+
+
+<?php
+
+namespace App\Http\Livewire;
+
+use Livewire\Component;
+use Livewire\withFileUploads;
+
+class CreatePost extends Component
+{
+        use withFileUploads;
+        public $image;
+        public $titulo, $contenido;
+        public $isOpen=false;
+        protected $rules=[
+            'titulo'=>['required', 'string', 'min:3','unique:posts,titulo'],
+            'contenido'=>['required','string','min:8'],
+            'image'=>['required','image','max:1024']
+        ];
+        public function render(){
+            return view('livewire.create-post');
+        }
+    
+        public function guardar(){
+            $this->validate();
+        }
+}
+
+Ahora mismo necesitamos controlar los errores o no sabremos que ha fallado, usamos un componente input-error:
+resources\views\vendor\jetstream\components\input-error.blade.php
+
+antes enseño lo del wire:model
+
+
+Nuevo Post
+</x-slot>
+<x-slot name="content">
+<x-jet-label value="Título del Post"/>
+<x-jet-input type="text" placeholder="Título" wire:model="titulo" class="my-2 mb-4 w-full" />
+<x-jet-label value="Contenido del Post"/>
+<text-area wire:model="contenido" class='my-2 mb-4 w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm' placeholder="Contenido del post"></text-area>
+
+
+ahora lo del input:
+//los he metido despues de titulo contenido e image:
+
+
+
+Nuevo Post
+</x-slot>
+<x-slot name="content">
+<x-jet-label value="Título del Post"/>
+<x-jet-input type="text" placeholder="Título" wire:model="titulo" class="my-2 mb-4 w-full" />
+<x-jet-input-error for="titulo"/>
+<x-jet-label value="Contenido del Post"/>
+<textarea
+                class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm'
+                placeholder='Contenido del Post' wire:model="contenido"></textarea>
+<x-jet-input-error for="contenido"/>
+
+<!---Para la imagen-->
+<div class="grid mt-2 grid-cols-2 gap-4">
+<div>
+<x-jet-label value="Imagen del Post"/>
+<div class="flex justify-center">
+
+<input class="form-control
+    block
+    w-full
+    px-3
+    py-1.5
+    text-base
+    font-normal
+    text-gray-700
+    bg-white bg-clip-padding
+    border border-solid border-gray-300
+    rounded
+    transition
+    ease-in-out
+    m-0
+    focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+    type="file" wire:model="image" accept="image/*">
+    <x-jet-input-error for="image"/>
+
+.
+.
+.
+.
+
+<!--Fin de lo de la img-->
+</x-slot>
+<x-slot name="footer">
+<button wire:click="guardar" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-save"></i> Enviar
+</x-slot>
+
+
+//lo ultimo (wire:click) es necesario para que llame a la funcion de validacion:
+
+
+/////error del text area solucionado.
+//los errores funcionan
+
+modificamos la funcion guardar():
+
+
+ public function guardar(){
+            $this->validate();
+            //hemos pasado las validaciones
+            //1.-Guardamos la imagen en el disco
+            //como estamos usando el driver public lo guardará
+            //en public, en una carpeta posts que creará
+            $imagen=$this->image->stor('posts');
+
+            //2.-Guardamos el registro en la BBDD.
+            Post::create([
+                'titulo'=>ucfirst($this->titulo),
+                'contenido'=>ucfirst($this->contenido),
+                //en la variable $imagen esta la ruta de la propia imagen, que es lo que queremos guardar
+                //es un archivo, asi que no usamos el this, usamos la url 
+                'image'=>$imagen
+            ]);
+
+        }
+
+
+Ahora loq ue pasa con el create, es que al crear un post no se cierra la modal y da fallo
+si le damos de nuevo, es más el post será visible, pero tenemos que cerrar la ventana y que no
+nos salgan los datso del post recien creado.
+
+
+reseteamos las variables  para que el siguiente post empiece de 0:
+app\Http\Livewire\CreatePost.php
+
+public function guardar(){
+            $this->validate();
+            //hemos pasado las validaciones
+            //1.-Guardamos la imagen en el disco
+            //como estamos usando el driver public lo guardará
+            //en public, en una carpeta posts que creará
+            $imagen=$this->image->stor('posts');
+
+            //2.-Guardamos el registro en la BBDD.
+            Post::create([
+                'titulo'=>ucfirst($this->titulo),
+                'contenido'=>ucfirst($this->contenido),
+                //en la variable $imagen esta la ruta de la propia imagen, que es lo que queremos guardar
+                //es un archivo, asi que no usamos el this, usamos la url 
+                'image'=>$imagen
+            ]);
+             //resetea las variables con sus valores iniciales
+        $this->reset(['isOpen', 'titulo', 'contenido']);
+
+        }
+
+
+vamos a añadir 2 listeners, uno para renderizar el showpost:
+usaremos 2 alertas.
+usaremos la pagina sweetalert.
+
+public function guardar(){
+            $this->validate();
+            //hemos pasado las validaciones
+            //1.-Guardamos la imagen en el disco
+            //como estamos usando el driver public lo guardará
+            //en public, en una carpeta posts que creará
+            $imagen=$this->image->stor('posts');
+
+            //2.-Guardamos el registro en la BBDD.
+            Post::create([
+                'titulo'=>ucfirst($this->titulo),
+                'contenido'=>ucfirst($this->contenido),
+                //en la variable $imagen esta la ruta de la propia imagen, que es lo que queremos guardar
+                //es un archivo, asi que no usamos el this, usamos la url 
+                'image'=>$imagen
+            ]);
+             //resetea las variables con sus valores iniciales
+        $this->reset(['isOpen', 'titulo', 'contenido','image']);
+            //necesito que el showpost se renderice
+            //para ello creamos un listener que solo lo escuche show.posts
+            //y para las alertas un listener para todos los sitios
+            $this->emitTo('show-posts','renderizarPosts');
+        }
+
+
+vamos a : app\Http\Livewire\ShowPosts.php
+hacemos que escuche los listeners:
+
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+
+    //listeners
+    protected $listeners=['renderizarPosts'=>'render'];//['render] eso significa que el evento y funcion comparten el nombre y ahorramos lineas de codigo
+
+    public function render()
+    {
+        $posts=Post::orderBy($this->campo,$this->orden)
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+    public function ordenar(String $campo)
+    {
+        if ($campo == $this->campo) {
+            $this->orden = ($this->orden == 'desc') ? 'asc' : 'desc';
+        }
+        $this->campo = $campo;
+    }
+    
+}
+
+
+
+ahora usamos sweetalert, hacemos un evento, y lo instalammos con el cdn.
+
+        public function guardar(){
+            $this->validate();
+            //hemos pasado las validaciones
+            //1.-Guardamos la imagen en el disco
+            //como estamos usando el driver public lo guardará
+            //en public, en una carpeta posts que creará
+            $imagen=$this->image->store('posts');
+
+            //2.-Guardamos el registro en la BBDD.
+            Post::create([
+                'titulo'=>ucfirst($this->titulo),
+                'contenido'=>ucfirst($this->contenido),
+                //en la variable $imagen esta la ruta de la propia imagen, que es lo que queremos guardar
+                //es un archivo, asi que no usamos el this, usamos la url 
+                'image'=>$imagen
+            ]);
+             //resetea las variables con sus valores iniciales
+        $this->reset(['isOpen', 'titulo', 'contenido']);
+            //necesito que el showpost se renderice
+            //para ello creamos un listener que solo lo escuche show.posts
+            //y para las alertas un listener para todos los sitios
+            $this->emitTo('show-posts','renderizarPosts');
+
+            //evento para las alertas de crear post
+            $this->emit('alerta','Post creado con éxito');
+
+        }
+
+
+abrimos resources\views\layouts\app.blade.php:
+ponemos el sweetalert
+
+        <!--Sweetalert-->
+	<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        
+
+.
+.
+.
+.
+@livewireScripts
+        <script>
+            Livewire.on("alerta",function(txt){
+                Swal.fire({
+                    icon: 'success',
+                    title: txt,
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            })
+
+        </script>
+
+//el script lo creamos, aqui lo que pasa es que le pasamos el texto del listener alerta que hemos 
+//preparado, y durará 1,5 segundos       
+
+//funciona bien
+
+
+para mejorar la eficiencia hreamos que el renderizado se retrase hasta que se de al boton enviar en: resources\views\livewire\create-post.blade.php
+//hemos puesto wire:model.defer
+
+Nuevo Post
+</x-slot>
+<x-slot name="content">
+<x-jet-label value="Título del Post"/>
+<x-jet-input type="text" placeholder="Título" wire:model.defer="titulo" class="my-2 mb-4 w-full" />
+<x-jet-input-error for="titulo"/>
+<x-jet-label value="Contenido del Post"/>
+<textarea
+                class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm'
+                placeholder='Contenido del Post' wire:model.defer="contenido"></textarea>
+
+
+ahora haremos que el boton de enviar se desactive mientras se envian los datos:
+//misma ruta que el anterior
+//usamos wire:loading.attr="disabled"
+//esto hace que mientras se esta cargando se le asigne el atributo disabled.
+<!--Fin de lo de la img-->
+</x-slot>
+<x-slot name="footer">
+<button wire:click="guardar" wire:loading.attr="disabled" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+    <i class="fas fa-save"></i> Enviar
+</x-slot>
+
+ahora para hacer el borrar como está pintado en showposts, haremos un metodo en showpost para borrar.
+Empezamos poniendo un boton para borrar:
+resources\views\livewire\show-posts.blade.php
+//lo ponemos donde estaba borrar en show posts
+
+<td class="px-6 py-4 ">
+   <button wire:click="borrar({{$item}})" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-trash"></i></button>
+</td>
+
+//recordar pasar el item con {{}}
+con wire:click le pasamos el metodo y como le pasamos una variable, estamos 
+dentro del foreach asi que al pasarle item le pasamos el psot entero
+el metodo borrar lo crearemos en showPosts:
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+
+    //listeners
+    protected $listeners=['renderizarPosts'=>'render'];//['render] eso significa que el evento y funcion comparten el nombre y ahorramos lineas de codigo
+
+    public function render()
+    {
+        $posts=Post::orderBy($this->campo,$this->orden)
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+    public function ordenar(String $campo)
+    {
+        if ($campo == $this->campo) {
+            $this->orden = ($this->orden == 'desc') ? 'asc' : 'desc';
+        }
+        $this->campo = $campo;
+    }
+    public function borrar(Post $post){
+        //borro fisicamente la img asociada al post
+        Storage::delete($post->image);
+        //elimino el post
+        $post->delete();
+        //emitimos una alerta
+        $this->emit("alerta",'Post borrado');
+    }
+    
+}
+
+
+//a diferencia del anterior ahora ponemos solo un emit, no un emitTo, ya que estamos en la clase correcta
+//ademas no hace falta volver a renderiar por estar tb en la misma pagina,
+//si no sí que tocaría re-renderizarlo
+
+Falta hacer el editar.
+
+
+//_______________________A dia de hoy acaban de actualizar a laravel 9.0
+//cambian pocas cosas pero entre ellas el correo,
+//es posible que haya que modificar la guia del correo
+
+
+//____________________BONUS STAGE_______________ 
+//COMO COPIAR UN PROYECTO LARAVEL A UN NUEVO ORDENADOR Y VOLVER A MONTARLO
+
+copiamos el https:
+vamos a la carpeta donde montarlo:
+clonamos
+composer update en la carpeta raiz
+creamos la BBDD
+copiamos el .env example y lo renombramos
+ponemos los datos en el .env
+hacemos npm install
+npm run dev
+php artisan Storage:link
+hacemos php artisan migrate:fresh --seed
+cambiamos en .env el driver de local a public
+php artisan serve
+hace falta generar una key unica, nos da el comando el sistema
+el comando es: php artisan key:generate
+
+(si eso faltaria lo de publicar el vendor)
+clonado completado y proyecto listo y funcional
+
+//___________________________FIN BONUS STAGE_____________________
+
+
+Falta hacer el editar.
+
+como estamos con ventanas modales tenemos un problema, hay mucho codigo HTML
+y a la hora de buscar errores eso da mucha tralla, vamos a pasar los datos a otra ventana
+para un uso igual de fácil pero más eficient  a nivel de código.
+
+sustituimos el edit de show-posts
+//el click lo dejamos en blanco porque no tenemos metodo todavia para llamarlo
+
+<td class="px-6 py-4 w-16">
+	<button wire:click="" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-edit"></i></button>
+</td>
+
+hacemos una vetana modal copiando del modelo del create post:
+//recordemos que se abre o se cierra dependiendo de en este caso la variable isOpen
+//se abrirá cuando esté en true
+
+resources\views\livewire\show-posts.blade.php
+
+.
+.
+.
+
+            {{$posts->links()}}
+</div>
+  <!--Ventana modal para editar registros-->
+  <x-jet-dialog-modal wire:model="isOpen">
+    <x-slot name="title">
+    Editar Post
+    </x-slot>
+    <x-slot name="content">
+    </x-slot>
+    <x-slot name="footer">
+
+    </x-slot>
+  </x-jet-dialog-modal>
+
+  <!--Fin ventan modal-->
+</div>
+
+
+creamos la variable isOpen en showPosts.php:
+.
+.
+.
+
+class ShowPosts extends Component
+{
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+    public $isOpen=false;
+
+
+asociamos con que en el boton editar pase la variable a true.
+
+hacemos una funcion en shoposts.php en la que le pasemos un post
+y pase la variable isOpen a true
+//hace falta importar el Post
+
+    public function mostrarEdit(Post $post){
+        $this->isOpen=true;
+    }
+
+
+volvemos a la vista y ahora ponemos ese metodo en el boton edit:
+
+<td class="px-6 py-4 w-16">
+                  <button wire:click="mostrarEdit({{$item}})" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-edit"></i></button>
+                </td>
+
+
+
+mecesitaremos en la clase el withfileuploads y una variable imagen:
+
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+
+class ShowPosts extends Component
+{
+    use WithFileUploads;
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+    public $isOpen=false;
+    public $image;
+
+.
+.
+.
+.
+
+
+
+    public function mostrarEdit(Post $post){
+        $this->isOpen=true;
+        $this->post=$post;
+        
+
+    }
+
+
+esta ultima franja hace que se iguale el post traido al post que usamos.
+
+
+tambien vamos a necesitar una nueva funcion, mount() además de las reglas de validacion.
+para la validacion a la hora de hacer las rules hay que concatenarlas de esta forma,
+ya que las estamos modificando y  no creando.
+//lo dejamos medio vacio y luego lo temrinamos de rellenar
+
+ //validacion
+    protected $rules=[
+        'post.titulo'=>'',
+        'post.contenido'=>['required','string','min:8'],
+        'image'=>['null','required','max:1024']
+    ];
+
+
+
+app\Http\Livewire\ShowPosts.php
+de momento queda asi:
+
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+
+class ShowPosts extends Component
+{
+    use WithFileUploads;
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+    public $isOpen=false;
+    public $image;
+
+    //listeners
+    protected $listeners=['renderizarPosts'=>'render'];//['render] eso significa que el evento y funcion comparten el nombre y ahorramos lineas de codigo
+    //validacion
+    protected $rules=[
+        'post.titulo'=>'',
+        'post.contenido'=>['required','string','min:8'],
+        'image'=>['null','required','max:1024']
+    ];
+    
+    public function mount(){
+
+    }
+
+    public function render()
+    {
+        $posts=Post::orderBy($this->campo,$this->orden)
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+    public function ordenar(String $campo)
+    {
+        if ($campo == $this->campo) {
+            $this->orden = ($this->orden == 'desc') ? 'asc' : 'desc';
+        }
+        $this->campo = $campo;
+    }
+    public function borrar(Post $post){
+        //borro fisicamente la img asociada al post
+        Storage::delete($post->image);
+        //elimino el post
+        $post->delete();
+        //emitimos una alerta
+        $this->emit("alerta",'Post borrado');
+    }
+
+
+    public function mostrarEdit(Post $post){
+        $this->isOpen=true;
+        $this->post=$post;
+
+    }
+    
+}
+
+
+ahora terminamos de preparar la ventana modal en show-posts:
+//PENDIENTE DE REVISION ES POSIBLE QUE TENGA FALLOS
+
+
+ <!--Ventana modal para editar registros-->
+  <x-jet-dialog-modal wire:model="isOpen">
+    <x-slot name="title">
+    Editar Post
+    </x-slot>
+    <x-slot name="content">
+      <x-jet-label value="Título del Post"/>
+      <x-jet-input type="text" placeholder="Título" wire:model.defer="post.titulo" class="my-2 mb-4 w-full" />
+      <x-jet-input-error for="titulo"/>
+      <x-jet-label value="Contenido del Post"/>
+      <textarea
+        class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm'
+        placeholder='Contenido del Post' wire:model.defer="post.contenido"></textarea>
+      <x-jet-input-error for="contenido"/>
+      
+      <!---Para la imagen-->
+      <div class="grid mt-2 grid-cols-2 gap-4">
+      <div>
+      <x-jet-label value="Imagen del Post"/>
+      <div class="flex justify-center">
+      
+      <input class="form-control
+          block
+          w-full
+          px-3
+          py-1.5
+          text-base
+          font-normal
+          text-gray-700
+          bg-white bg-clip-padding
+          border border-solid border-gray-300
+          rounded
+          transition
+          ease-in-out
+          m-0
+          focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+          type="file" wire:model="image" accept="image/*">
+          <x-jet-input-error for="image"/>
+      
+      
+      </div>
+      <!--Pintamos la img por defecto o la img seleccionada-->
+      @if($image)
+      <img src="{{$image->temporaryUrl()}}" class="object-cover object-center w-80">
+      @else
+      <img src="{{Storage::url($post->image)}}" class="object-cover object-center w-80">
+      @endif
+      </div>
+      
+      <div>
+      </div>
+      
+      
+      </div>
+      
+      
+      
+      <!--Fin de lo de la img-->
+      </x-slot>
+      <x-slot name="footer">
+        <td class="px-6 py-4 ">
+          <button wire:click="update()" 
+          class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-edit"></i></button>
+        </td>
+      </x-slot>
+      
+      </x-jet-dialog-modal>
+  <!--Fin ventan modal-->
+
+//fin ventana modal
+
+
+
+ojo que cambiamos la ruta de imagen, a $post->image
+
+ahora creamos un metodo update en show-posts.php:
+
+
+ public function update(){
+        //validamos
+        //al entrar aqui $this->post tiene datos 
+        //asiq ue ya podemos escribir la validacion que faltaba
+        $this->validate([
+            'post.titulo'=>['required','string','min:3','unique:post,titulo,'.$this->post->id]
+        ]);
+ 
+
+    }
+
+
+
+
+tb hacemos el metodo mount(), que inicializa un post 
+
+  public function mount(){
+        $this->post=new Post;
+
+    }
+
+
+para que funcione el edit necesitamos las validaciones, y para que estas no den nulas
+y den fallo hayq ue instanciar con mount.
+
+
+//mirar las validaciones no deja guardar el mismo titulo
+
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+
+class ShowPosts extends Component
+{
+    use WithFileUploads;
+    use WithPagination;
+    public $search="";
+    public $campo="id";
+    public $orden="desc";
+    public $isOpen=false;
+    public $image;
+
+    //listeners
+    protected $listeners=['renderizarPosts'=>'render'];//['render] eso significa que el evento y funcion comparten el nombre y ahorramos lineas de codigo
+    //validacion
+    protected $rules=[
+        'post.titulo'=>'',
+        'post.contenido'=>['required','string','min:8'],
+        'image'=>['null','required','max:1024']
+    ];
+    
+    public function mount(){
+        $this->post=new Post;
+
+    }
+
+    public function render()
+    {
+        $posts=Post::orderBy($this->campo,$this->orden)
+        ->where('titulo','like',"%{$this->search}%")
+        ->orWhere('contenido','like',"%{$this->search}%")
+        ->paginate(3);
+        return view('livewire.show-posts',compact('posts'));
+    }
+    public function ordenar(String $campo)
+    {
+        if ($campo == $this->campo) {
+            $this->orden = ($this->orden == 'desc') ? 'asc' : 'desc';
+        }
+        $this->campo = $campo;
+    }
+    public function borrar(Post $post){
+        //borro fisicamente la img asociada al post
+        Storage::delete($post->image);
+        //elimino el post
+        $post->delete();
+        //emitimos una alerta
+        $this->emit("alerta",'Post borrado');
+    }
+
+
+    public function mostrarEdit(Post $post){
+        $this->isOpen=true;
+        $this->post=$post;
+
+    }
+
+    public function update(){
+        //validamos
+        //al entrar aqui $this->post tiene datos 
+        //asi que ya podemos escribir la validacion que faltaba
+        $this->validate([
+            'post.titulo'=>['required', 'string', 'unique:posts,titulo,'.$this->post->id]
+
+        ]);
+        //comprobamos si he subido una imagen nueva
+        //si es asi debemos borrar la antigua
+        //si hay image en 4this es que ha subido nueva
+        if($this->image){
+            //hemos subido una imagen
+            //borramos la antigua
+            Storage::delete($this->post->image);
+            //guardo la nueva
+            $imagenNueva=$this->image->store('posts');
+            $this->post->image=$imagenNueva;
+        }
+        $this->post->save();
+        //reseteamos
+        $this->reset(['isOpen','image']);       
+        $this->emit('alerta','Post modificado con éxito');
+    }
+    
+}
+
+
+//mirar las validaciones no deja guardar el mismo titulo
+
+
+Fin del proyecto
+
+
+
+
+
+
+

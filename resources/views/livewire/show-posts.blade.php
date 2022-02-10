@@ -25,9 +25,7 @@
                 <th scope="col"  colspan="2">
                   Role
                 </th>
-                <th scope="col" class="relative px-6 py-3">
-                  <span class="sr-only">Edit</span>
-                </th>
+                
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -49,15 +47,15 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-6 py-4 w-16">
                   {{$item->contenido}}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                 Editar
+                <td class="px-6 py-4 w-16">
+                  <button wire:click="mostrarEdit({{$item}})" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-edit"></i></button>
                 </td>
                 
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  Borrar
+                <td class="px-6 py-4 ">
+                  <button wire:click="borrar({{$item}})" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-trash"></i></button>
                 </td>
               </tr>
               @endforeach
@@ -75,5 +73,72 @@
 
             {{$posts->links()}}
 </div>
-  
+  <!--Ventana modal para editar registros-->
+  <x-jet-dialog-modal wire:model="isOpen">
+    <x-slot name="title">
+    Editar Post
+    </x-slot>
+    <x-slot name="content">
+      <x-jet-label value="Título del Post"/>
+      <x-jet-input type="text" placeholder="Título" wire:model.defer="post.titulo" class="my-2 mb-4 w-full" />
+      <x-jet-input-error for="post.titulo"/>
+      <x-jet-label value="Contenido del Post"/>
+      <textarea
+        class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm'
+        placeholder='Contenido del Post' wire:model.defer="post.contenido"></textarea>
+      <x-jet-input-error for="post.contenido"/>
+      
+      <!---Para la imagen-->
+      <div class="grid mt-2 grid-cols-2 gap-4">
+      <div>
+      <x-jet-label value="Imagen del Post"/>
+      <div class="flex justify-center">
+      
+      <input class="form-control
+          block
+          w-full
+          px-3
+          py-1.5
+          text-base
+          font-normal
+          text-gray-700
+          bg-white bg-clip-padding
+          border border-solid border-gray-300
+          rounded
+          transition
+          ease-in-out
+          m-0
+          focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+          type="file" wire:model="image" accept="image/*">
+          <x-jet-input-error for="image"/>
+      
+      
+      </div>
+      <!--Pintamos la img por defecto o la img seleccionada-->
+      @if($image)
+      <img src="{{$image->temporaryUrl()}}" class="object-cover object-center w-80">
+      @else
+      <img src="{{Storage::url($post->image)}}" class="object-cover object-center w-80">
+      @endif
+      </div>
+      
+      <div>
+      </div>
+      
+      
+      </div>
+      
+      
+      
+      <!--Fin de lo de la img-->
+      </x-slot>
+      <x-slot name="footer">
+        <td class="px-6 py-4 ">
+          <button wire:click="update()" 
+          class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded"><i class="fas fa-edit"></i>Edit</button>
+        </td>
+      </x-slot>
+      
+      </x-jet-dialog-modal>
+  <!--Fin ventan modal-->
 </div>

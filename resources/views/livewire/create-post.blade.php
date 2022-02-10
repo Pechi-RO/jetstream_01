@@ -8,9 +8,14 @@ Nuevo Post
 </x-slot>
 <x-slot name="content">
 <x-jet-label value="Título del Post"/>
-<x-jet-input type="text" placeholder="Título" class="my-2 mb-4 w-full" />
+<x-jet-input type="text" placeholder="Título" wire:model.defer="titulo" class="my-2 mb-4 w-full" />
+<x-jet-input-error for="titulo"/>
 <x-jet-label value="Contenido del Post"/>
-<text-area class='my-2 mb-4 w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm' placeholder="Contenido del post"></text-area>
+<textarea
+                class='w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm'
+                placeholder='Contenido del Post' wire:model.defer="contenido"></textarea>
+<x-jet-input-error for="contenido"/>
+
 <!---Para la imagen-->
 <div class="grid mt-2 grid-cols-2 gap-4">
 <div>
@@ -33,6 +38,8 @@ Nuevo Post
     m-0
     focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
     type="file" wire:model="image" accept="image/*">
+    <x-jet-input-error for="image"/>
+
 
 </div>
 <!--Pintamos la img por defecto o la img seleccionada-->
@@ -54,7 +61,7 @@ Nuevo Post
 <!--Fin de lo de la img-->
 </x-slot>
 <x-slot name="footer">
-<button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+<button wire:click="guardar" wire:loading.attr="disabled" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
     <i class="fas fa-save"></i> Enviar
 </x-slot>
 
